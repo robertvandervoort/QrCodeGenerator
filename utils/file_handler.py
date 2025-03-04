@@ -2,6 +2,7 @@ import pandas as pd
 import re
 from io import BytesIO
 from typing import List, Dict, Tuple, Optional, Union, Set
+from utils.logging_utils import logger, log_dataframe_info
 
 
 def read_file(uploaded_file) -> Dict:
@@ -131,13 +132,34 @@ def prepare_dataframe(df: pd.DataFrame, url_column: str, filename_columns: List[
     # Make a copy to avoid modifying the original
     processed_df = df.copy()
     
-    # Filter out rows with empty or NaN URLs
-    processed_df = processed_df.dropna(subset=[url_column])
-    processed_df = processed_df[processed_df[url_column].astype(str).str.strip() != '']
+    # Log input dataframe info
+    log_dataframe_info(processed_df, "Original dataframe")
+    logger.info(f"URL column: {url_column}, Filename columns: {filename_columns}, Separator: '{separator}'")
     
-    # Create filename column
+    # Filter out rows with empty or NaN URLs
+    original_count = len(processed_df)
+    processed_df = processed_df.dropna(subset=[url_column])
+    after_nan_count = len(processed_df)
+    if original_count > after_nan_count:
+        logger.info(f"Dropped {original_count - after_nan_count} rows with NaN values in URL column '{url_column}'")
+    
+    # Filter empty strings
+    processed_df = processed_df[processed_df[url_column].astype(str).str.strip() != '']
+    after_empty_count = len(processed_df)
+    if after_nan_count > after_empty_count:
+        logger.info(f"Dropped {after_nan_count - after_empty_count} rows with empty strings in URL column '{url_column}'")
+    
+    # Create a helper function to safely convert cell values
+    def safe_str_value(value):
+        if pd.isna(value):
+            return "missing"  # Replace NaN with a descriptive placeholder
+        s = str(value)
+        return s if s.strip() != '' else "empty"  # Replace empty strings
+    
+    # Create filename column with safe value conversion
+    logger.info("Creating filename column with safe value conversion")
     processed_df['generated_filename'] = processed_df.apply(
-        lambda row: separator.join(str(row[col]) for col in filename_columns) + '.png', 
+        lambda row: separator.join(safe_str_value(row[col]) for col in filename_columns) + '.png', 
         axis=1
     )
     
@@ -146,7 +168,35 @@ def prepare_dataframe(df: pd.DataFrame, url_column: str, filename_columns: List[
     for char in invalid_chars:
         processed_df['generated_filename'] = processed_df['generated_filename'].str.replace(char, '-')
     
+    # Replace 'nan' in filenames with 'missing'
+    processed_df['generated_filename'] = processed_df['generated_filename'].str.replace('nan', 'missing')
+    
+    # Log filenames that still contain 'nan' after replacement
+    nan_filenames = processed_df[processed_df['generated_filename'].str.contains('nan')]
+    if not nan_filenames.empty:
+        logger.warning(f"Found {len(nan_filenames)} filenames still containing 'nan' after replacement")
+        logger.warning(f"Sample filenames: {nan_filenames['generated_filename'].head(3).tolist()}")
+    
+    # Check for duplicate filenames
+    filename_counts = processed_df['generated_filename'].value_counts()
+    duplicates = filename_counts[filename_counts > 1]
+    if not duplicates.empty:
+        logger.warning(f"Found {len(duplicates)} duplicate filenames")
+        for filename, count in duplicates.items():
+            logger.warning(f"Filename '{filename}' appears {count} times")
+        
+        # Add a unique suffix to duplicate filenames
+        dup_mask = processed_df['generated_filename'].duplicated(keep=False)
+        processed_df.loc[dup_mask, 'generated_filename'] = processed_df.loc[dup_mask].apply(
+            lambda x: x['generated_filename'].replace('.png', f'_{pd.util.hash_pandas_object(x).sum()}.png'),
+            axis=1
+        )
+        logger.info("Added unique suffixes to duplicate filenames")
+    
     # Keep only necessary columns
     processed_df = processed_df[[url_column, 'generated_filename']]
+    
+    # Log final dataframe info
+    log_dataframe_info(processed_df, "Final processed dataframe")
     
     return processed_df

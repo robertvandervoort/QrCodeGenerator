@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 import base64
+import zipfile
 from typing import List, Dict, Tuple, Optional
 import os
 
@@ -18,6 +19,7 @@ from utils.qr_generator import (
     create_zip_file,
     get_image_download_link
 )
+from utils.logging_utils import logger, log_dataframe_info, log_qr_generation_summary
 
 # Page configuration
 st.set_page_config(
@@ -281,11 +283,35 @@ if st.session_state.current_df is not None:
         
         # Create download button for zip file
         zip_data = create_zip_file(st.session_state.qr_codes)
-        zip_b64 = base64.b64encode(zip_data).decode()
+        
+        # Count actual files in the ZIP
+        actual_files = 0
+        try:
+            zip_buffer = io.BytesIO(zip_data)
+            with zipfile.ZipFile(zip_buffer, 'r') as zip_ref:
+                # List all files in the ZIP
+                file_list = zip_ref.namelist()
+                actual_files = len(file_list)
+                logger.info(f"Files in ZIP archive: {actual_files}")
+                
+                # Log the first few filenames
+                if file_list:
+                    logger.info(f"First 5 files in ZIP: {file_list[:5]}")
+                
+                # Check for potential issues
+                if actual_files != len(st.session_state.qr_codes):
+                    logger.warning(f"ZIP contains {actual_files} files but generated {len(st.session_state.qr_codes)} QR codes")
+        except Exception as e:
+            logger.error(f"Error analyzing ZIP file: {str(e)}")
+        
+        # Show detailed info to user
+        st.info(f"QR Codes Generated: {len(st.session_state.qr_codes)} | Files in ZIP: {actual_files}")
+        if actual_files < len(st.session_state.qr_codes):
+            st.warning(f"Note: {len(st.session_state.qr_codes) - actual_files} QR codes were skipped or merged due to duplicate or invalid filenames.")
         
         # Create a download button for the ZIP file
         st.download_button(
-            label="Download All QR Codes as ZIP",
+            label=f"Download All {actual_files} QR Codes as ZIP",
             data=zip_data,
             file_name="qr_codes.zip",
             mime="application/zip",
