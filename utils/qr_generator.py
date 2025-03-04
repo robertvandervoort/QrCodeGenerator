@@ -3,6 +3,8 @@ from PIL import Image
 import pandas as pd
 import zipfile
 import io
+import re
+import os
 from typing import Dict, List, Tuple, Union, ByteString, Optional
 import base64
 from utils.logging_utils import logger, log_dataframe_info, log_row_data, log_qr_generation_summary
@@ -64,6 +66,18 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
     log_dataframe_info(df, "Original dataframe before filtering")
     logger.info(f"Generating QR codes with parameters: qr_size={qr_size}, qr_border={qr_border}, output_size={output_size}")
     
+    # Check data types and log URL column data type
+    logger.info(f"URL column '{url_column}' data type: {df[url_column].dtype}")
+    
+    # Log detailed information about URL column to debug Excel formula issues
+    logger.info("Examining URL column data to check for Excel formulas or dynamic content:")
+    for idx, value in df[url_column].head(10).items():
+        url_str = str(value)
+        starts_with_http = url_str.lower().startswith('http')
+        url_length = len(url_str)
+        logger.info(f"Row {idx} URL: type={type(value).__name__}, length={url_length}, starts_with_http={starts_with_http}")
+        logger.info(f"  Value: {url_str[:100]}{'...' if url_length > 100 else ''}")
+        
     # Filter out rows with empty or NaN URLs to be extra safe
     valid_df = df.dropna(subset=[url_column]).copy()
     logger.info(f"After dropping NaN values in {url_column}: {len(valid_df)} rows remaining")
@@ -71,6 +85,24 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
     # Filter out empty strings
     valid_df = valid_df[valid_df[url_column].astype(str).str.strip() != '']
     logger.info(f"After filtering empty strings in {url_column}: {len(valid_df)} rows remaining")
+    
+    # Check for URLs that don't start with http/https - might be Excel formulas not evaluating correctly
+    non_http_urls = valid_df[~valid_df[url_column].astype(str).str.lower().str.startswith(('http://', 'https://'))]
+    if not non_http_urls.empty:
+        logger.warning(f"Found {len(non_http_urls)} URLs that don't start with http:// or https://")
+        for idx, row in non_http_urls.head(5).iterrows():
+            logger.warning(f"Row {idx} has non-HTTP URL: {str(row[url_column])}")
+    
+    # Check for problematic filename patterns that would be filtered later
+    problematic_patterns = ['missing_missing', 'nan_nan', 'item_item', 'empty_empty']
+    for pattern in problematic_patterns:
+        matches = valid_df[valid_df[filename_column].astype(str).str.contains(pattern, case=False)]
+        if not matches.empty:
+            logger.warning(f"Found {len(matches)} rows with problematic filename pattern '{pattern}'")
+            # For each matching row, log the raw URL value to help diagnose the issue
+            for idx, row in matches.head(5).iterrows():
+                url_value = row[url_column]
+                logger.warning(f"Row {idx} with '{pattern}' in filename has URL: {url_value} (type: {type(url_value).__name__})")
     
     # Log filename info
     if filename_column in valid_df.columns:
@@ -100,6 +132,11 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
             elif i % 20 == 0:  # Log every 20th row
                 logger.info(f"Processing row {i+1}/{row_count}")
             
+            # Skip problematic filenames
+            if any(pattern in filename.lower() for pattern in problematic_patterns):
+                logger.warning(f"Row {index}: Skipping file with problematic filename pattern: {filename}")
+                continue
+            
             # Skip if filename contains 'nan' (could happen with str conversion of NaN)
             if 'nan' in filename.lower():
                 logger.warning(f"Row {index}: Skipping file with NaN in filename: {filename}")
@@ -109,6 +146,14 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
             if url.strip() == '':
                 logger.warning(f"Row {index}: Empty URL after stripping whitespace")
                 continue
+            
+            # Skip if URL doesn't start with http:// or https:// 
+            # This is optional - comment this out if you have valid URLs that don't start with http
+            if not url.lower().startswith(('http://', 'https://')):
+                logger.warning(f"Row {index}: URL doesn't start with http:// or https://: {url}")
+                # We're not skipping these URLs as they may be valid formula results in Excel
+                # If you want to skip them, uncomment the next line
+                # continue
                 
             # Generate QR code
             logger.info(f"Generating QR code for URL: {url[:50]}..." if len(url) > 50 else f"Generating QR code for URL: {url}")
@@ -156,11 +201,25 @@ def create_zip_file(qr_codes: List[Tuple[str, bytes]]) -> bytes:
     
     # Track filenames to handle duplicates
     seen_filenames = {}
+    skipped_files = 0
+    
+    # Check for problematic filenames
+    problematic_patterns = ['missing_missing', 'nan_nan', 'item_item', 'empty_empty']
+    problematic_count = sum(1 for filename, _ in qr_codes if any(pattern in filename.lower() for pattern in problematic_patterns))
+    if problematic_count > 0:
+        logger.warning(f"Found {problematic_count} filenames with problematic patterns (e.g., missing_missing)")
     
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for filename, img_bytes in qr_codes:
+            # Skip problematic filenames
+            if any(pattern in filename.lower() for pattern in problematic_patterns):
+                skipped_files += 1
+                logger.warning(f"Skipping file with problematic filename pattern: {filename}")
+                continue
+            
             # Skip any filenames containing 'nan'
             if 'nan' in filename.lower():
+                skipped_files += 1
                 logger.warning(f"Skipping file with 'nan' in filename: {filename}")
                 continue
                 
@@ -180,11 +239,14 @@ def create_zip_file(qr_codes: List[Tuple[str, bytes]]) -> bytes:
                 logger.info(f"Added file to ZIP: {filename}")
             except Exception as e:
                 logger.error(f"Error adding {filename} to ZIP: {str(e)}")
+                skipped_files += 1
     
     # Log summary
     logger.info(f"ZIP file created with {len(seen_filenames)} QR codes")
-    if len(seen_filenames) != len(qr_codes):
-        logger.warning(f"Note: {len(qr_codes) - len(seen_filenames)} files were skipped or renamed due to duplicates or invalid names")
+    if skipped_files > 0 or len(seen_filenames) != len(qr_codes):
+        total_skipped = len(qr_codes) - len(seen_filenames)
+        logger.warning(f"Note: {total_skipped} files were skipped or renamed due to duplicates or invalid names")
+        logger.warning(f"Skipped files (problematic patterns): {skipped_files}")
     
     zip_buffer.seek(0)
     return zip_buffer.getvalue()

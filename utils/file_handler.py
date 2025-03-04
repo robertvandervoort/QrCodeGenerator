@@ -136,12 +136,40 @@ def prepare_dataframe(df: pd.DataFrame, url_column: str, filename_columns: List[
     log_dataframe_info(processed_df, "Original dataframe")
     logger.info(f"URL column: {url_column}, Filename columns: {filename_columns}, Separator: '{separator}'")
     
+    # Log the raw data from the spreadsheet
+    logger.info("Raw data from spreadsheet (first 10 rows):")
+    for idx, row in processed_df.head(10).iterrows():
+        logger.info(f"Row {idx}:")
+        for col_name, value in row.items():
+            logger.info(f"  - {col_name}: {value} (type: {type(value).__name__}, isna: {pd.isna(value)})")
+    
+    # Log specific info about URL column before filtering
+    logger.info(f"URL column '{url_column}' data before filtering:")
+    for idx, value in processed_df[url_column].head(20).items():
+        logger.info(f"  Row {idx}: {value} (type: {type(value).__name__}, isna: {pd.isna(value)}, strip empty: {str(value).strip() == '' if not pd.isna(value) else 'N/A'})")
+    
     # Filter out rows with empty or NaN URLs
     original_count = len(processed_df)
+    
+    # Identify and log problematic rows before dropping them
+    problematic_rows = processed_df[pd.isna(processed_df[url_column])]
+    for idx, row in problematic_rows.iterrows():
+        logger.warning(f"Row {idx} has NaN in URL column '{url_column}':")
+        for col_name, value in row.items():
+            logger.warning(f"  - {col_name}: {value} (type: {type(value).__name__})")
+    
+    # Actually drop the NaN values
     processed_df = processed_df.dropna(subset=[url_column])
     after_nan_count = len(processed_df)
     if original_count > after_nan_count:
         logger.info(f"Dropped {original_count - after_nan_count} rows with NaN values in URL column '{url_column}'")
+    
+    # Identify and log rows with empty strings before filtering
+    empty_url_rows = processed_df[processed_df[url_column].astype(str).str.strip() == '']
+    for idx, row in empty_url_rows.iterrows():
+        logger.warning(f"Row {idx} has empty string in URL column '{url_column}':")
+        for col_name, value in row.items():
+            logger.warning(f"  - {col_name}: {value} (type: {type(value).__name__})")
     
     # Filter empty strings
     processed_df = processed_df[processed_df[url_column].astype(str).str.strip() != '']
@@ -149,12 +177,13 @@ def prepare_dataframe(df: pd.DataFrame, url_column: str, filename_columns: List[
     if after_nan_count > after_empty_count:
         logger.info(f"Dropped {after_nan_count - after_empty_count} rows with empty strings in URL column '{url_column}'")
     
-    # Create a helper function to safely convert cell values
+    # Create a helper function to safely convert cell values for filename generation ONLY
+    # This should NOT be used for the URL column itself
     def safe_str_value(value):
         if pd.isna(value):
-            return "missing"  # Replace NaN with a descriptive placeholder
+            return "item"  # More generic placeholder than "missing"
         s = str(value)
-        return s if s.strip() != '' else "empty"  # Replace empty strings
+        return s if s.strip() != '' else "item"  # Use "item" instead of "empty"
     
     # Create filename column with safe value conversion
     logger.info("Creating filename column with safe value conversion")
