@@ -19,7 +19,7 @@ from utils.qr_generator import (
     create_zip_file,
     get_image_download_link
 )
-from utils.logging_utils import logger, log_dataframe_info, log_qr_generation_summary
+from utils.logging_utils import logger, log_dataframe_info, log_qr_generation_summary, set_debug_mode
 
 # Page configuration
 st.set_page_config(
@@ -83,6 +83,8 @@ if 'qr_border' not in st.session_state:
     st.session_state.qr_border = 4
 if 'output_resolution' not in st.session_state:
     st.session_state.output_resolution = ""
+if 'debug_mode' not in st.session_state:
+    st.session_state.debug_mode = False
 
 # Title and introduction
 st.title("QR Code Generator for Spreadsheet Data")
@@ -358,8 +360,28 @@ else:
     """
     )
 
-# Footer
+# Footer with Settings
 st.write("---")
+
+# Add a settings expander in the footer area
+with st.expander("⚙️ Settings"):
+    # Add debug mode toggle
+    debug_mode = st.toggle(
+        "Debug Mode", 
+        value=st.session_state.debug_mode,
+        help="Enable detailed logging for troubleshooting. This shows additional diagnostic information in the console."
+    )
+    
+    # Update session state and logger if debug mode changed
+    if debug_mode != st.session_state.debug_mode:
+        st.session_state.debug_mode = debug_mode
+        set_debug_mode(debug_mode)
+        if debug_mode:
+            st.info("Debug mode enabled. Detailed logs will be shown in the console.")
+        else:
+            st.info("Debug mode disabled. Only warnings and errors will be shown.")
+
+# Copyright footer
 st.markdown("""
 <div style="text-align: center; color: #888;">
     Built with Streamlit • QR Code Generator for Spreadsheet Data

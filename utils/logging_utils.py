@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 from typing import Any, Dict, List, Optional
 
-# Configure logging
+# Set up basic logger configuration
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -12,7 +12,23 @@ logging.basicConfig(
     ]
 )
 
+# Create logger
 logger = logging.getLogger("qr_generator")
+
+# Function to adjust logger level based on debug mode setting
+def set_debug_mode(enabled: bool = False):
+    """
+    Set the debug mode for the application's logger.
+    
+    Args:
+        enabled: If True, sets the logger to DEBUG level with verbose output.
+                If False, sets the logger to INFO level with minimal output.
+    """
+    if enabled:
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Debug mode enabled - verbose logging activated")
+    else:
+        logger.setLevel(logging.WARNING)  # Only show warnings and errors in normal mode
 
 def log_dataframe_info(df: pd.DataFrame, description: str) -> None:
     """
