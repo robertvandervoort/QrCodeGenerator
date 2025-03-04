@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple, Union, ByteString, Optional
 import base64
 
 
-def create_qr_code(url: str, size: int = 10, border: int = 4, output_size: int = None) -> Image.Image:
+def create_qr_code(url: str, size: int = 10, border: int = 4, output_size: Optional[int] = None) -> Image.Image:
     """
     Create a QR code image from a URL.
     
@@ -42,7 +42,7 @@ def create_qr_code(url: str, size: int = 10, border: int = 4, output_size: int =
 def generate_qr_codes(df: pd.DataFrame, url_column: str, 
                       filename_column: str = 'generated_filename',
                       qr_size: int = 10, qr_border: int = 4,
-                      output_size: int = None) -> List[Tuple[str, bytes]]:
+                      output_size: Optional[int] = None) -> List[Tuple[str, bytes]]:
     """
     Generate QR codes for all URLs in the dataframe.
     
@@ -52,30 +52,40 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
         filename_column: Name of column containing filenames
         qr_size: Size of the QR code modules
         qr_border: Border width in modules
-        output_size: Final output image size in pixels
+        output_size: Final output image size in pixels (optional)
         
     Returns:
         List[Tuple[str, bytes]]: List of (filename, image_bytes) tuples
     """
     qr_codes = []
     
-    for _, row in df.iterrows():
-        url = row[url_column]
-        filename = row[filename_column]
-        
-        # Skip empty URLs
-        if pd.isna(url) or url == '':
-            continue
+    # Filter out rows with empty or NaN URLs to be extra safe
+    valid_df = df.dropna(subset=[url_column]).copy()
+    valid_df = valid_df[valid_df[url_column].astype(str).str.strip() != '']
+    
+    for _, row in valid_df.iterrows():
+        try:
+            url = str(row[url_column])
+            filename = str(row[filename_column])
             
-        # Generate QR code
-        img = create_qr_code(url, size=qr_size, border=qr_border, output_size=output_size)
-        
-        # Convert to bytes
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='PNG')
-        img_bytes = img_byte_arr.getvalue()
-        
-        qr_codes.append((filename, img_bytes))
+            # Skip if URL is just whitespace
+            if url.strip() == '':
+                continue
+                
+            # Generate QR code
+            img = create_qr_code(url, size=qr_size, border=qr_border, output_size=output_size)
+            
+            # Convert to bytes
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
+            
+            qr_codes.append((filename, img_bytes))
+            
+        except Exception as e:
+            # Skip problematic rows but continue processing
+            print(f"Error processing row: {e}")
+            continue
     
     return qr_codes
 

@@ -117,6 +117,7 @@ def validate_filename_parts(df: pd.DataFrame, selected_columns: List[str], separ
 def prepare_dataframe(df: pd.DataFrame, url_column: str, filename_columns: List[str], separator: str) -> pd.DataFrame:
     """
     Prepare a dataframe for QR code generation by adding a filename column.
+    Filter out rows with empty or NaN values in the URL column.
     
     Args:
         df: Source dataframe
@@ -125,10 +126,14 @@ def prepare_dataframe(df: pd.DataFrame, url_column: str, filename_columns: List[
         separator: Character to separate values in filenames
         
     Returns:
-        pd.DataFrame: Processed dataframe with filename column
+        pd.DataFrame: Processed dataframe with filename column and filtered rows
     """
     # Make a copy to avoid modifying the original
     processed_df = df.copy()
+    
+    # Filter out rows with empty or NaN URLs
+    processed_df = processed_df.dropna(subset=[url_column])
+    processed_df = processed_df[processed_df[url_column].astype(str).str.strip() != '']
     
     # Create filename column
     processed_df['generated_filename'] = processed_df.apply(

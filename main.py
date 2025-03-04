@@ -251,6 +251,11 @@ if st.session_state.current_df is not None:
                         except ValueError:
                             st.warning(f"Invalid output resolution '{st.session_state.output_resolution}'. Using default size.")
                     
+                    # Check how many rows were filtered out due to empty URL values
+                    total_rows = len(st.session_state.current_df)
+                    valid_rows = len(processed_df)
+                    skipped_rows = total_rows - valid_rows
+                    
                     # Generate QR codes
                     qr_codes = generate_qr_codes(
                         processed_df, 
@@ -262,7 +267,12 @@ if st.session_state.current_df is not None:
                     st.session_state.qr_codes = qr_codes
                     progress_bar.progress(100)
                     
+                    # Success message with info about skipped rows
                     st.success(f"Generated {len(qr_codes)} QR codes successfully!")
+                    
+                    # Show info about skipped rows if any
+                    if skipped_rows > 0:
+                        st.info(f"Note: {skipped_rows} rows were skipped because they contained empty or invalid URL data.")
 
     # Display generated QR codes
     if st.session_state.qr_codes:
