@@ -32,7 +32,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': 'https://docs.streamlit.io',
+        'Get help': 'https://docs.streamlit.io',
         'Report a bug': "https://github.com/streamlit/streamlit/issues",
         'About': "# QR Code Generator for Spreadsheet Data\n"
                 "A tool to generate QR codes from URLs in Excel or CSV files.\n\n"
