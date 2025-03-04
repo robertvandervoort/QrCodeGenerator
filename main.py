@@ -36,7 +36,10 @@ st.set_page_config(
         'Report a bug': "https://github.com/streamlit/streamlit/issues",
         'About': "# QR Code Generator for Spreadsheet Data\n"
                 "A tool to generate QR codes from URLs in Excel or CSV files.\n\n"
-                "Version: 1.0.0"
+                "Version: 1.0.0\n\n"
+                "### Debug Mode\n"
+                "You can enable Debug Mode using the checkbox in the sidebar. "
+                "This increases the verbosity of logs for troubleshooting purposes."
     }
 )
 
@@ -51,6 +54,16 @@ except:
     # Fallback for older Streamlit versions
     pass
 
+# Add debug mode section to the sidebar
+st.sidebar.write("---")
+st.sidebar.header("Debug Options")
+
+# Add explanatory text
+st.sidebar.info("""
+Debug mode increases logging verbosity to help troubleshoot issues with file processing and QR code generation.
+When enabled, detailed logs will be written to the console with information about data processing, URL validation, and QR code creation.
+""")
+
 # Create a debug mode checkbox in the sidebar
 debug_checkbox = st.sidebar.checkbox("Enable Debug Mode", value=st.session_state.debug_mode, 
                      help="Show detailed logs in the console for troubleshooting")
@@ -62,6 +75,8 @@ if debug_checkbox != st.session_state.debug_mode:
     # Show a notification if the debug mode changed
     if debug_checkbox:
         st.sidebar.success("Debug mode enabled")
+    else:
+        st.sidebar.success("Debug mode disabled")
     
     # Update URL parameter
     try:
