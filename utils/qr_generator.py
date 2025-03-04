@@ -7,14 +7,15 @@ from typing import Dict, List, Tuple, Union, ByteString, Optional
 import base64
 
 
-def create_qr_code(url: str, size: int = 10, border: int = 4) -> Image.Image:
+def create_qr_code(url: str, size: int = 10, border: int = 4, output_size: int = None) -> Image.Image:
     """
     Create a QR code image from a URL.
     
     Args:
         url: The URL to encode in the QR code
-        size: Size of the QR code (1-40)
+        size: Size of the QR code box (1-40)
         border: Border width in modules
+        output_size: Final output image size in pixels (if specified, will resize the image)
         
     Returns:
         PIL.Image: QR code image
@@ -30,11 +31,18 @@ def create_qr_code(url: str, size: int = 10, border: int = 4) -> Image.Image:
     qr.make(fit=True)
     
     img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Resize image if output_size is specified
+    if output_size and output_size > 0:
+        img = img.resize((output_size, output_size), Image.LANCZOS)
+        
     return img
 
 
 def generate_qr_codes(df: pd.DataFrame, url_column: str, 
-                      filename_column: str = 'generated_filename') -> List[Tuple[str, bytes]]:
+                      filename_column: str = 'generated_filename',
+                      qr_size: int = 10, qr_border: int = 4,
+                      output_size: int = None) -> List[Tuple[str, bytes]]:
     """
     Generate QR codes for all URLs in the dataframe.
     
@@ -42,6 +50,9 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
         df: DataFrame containing URLs and filenames
         url_column: Name of column containing URLs
         filename_column: Name of column containing filenames
+        qr_size: Size of the QR code modules
+        qr_border: Border width in modules
+        output_size: Final output image size in pixels
         
     Returns:
         List[Tuple[str, bytes]]: List of (filename, image_bytes) tuples
@@ -57,7 +68,7 @@ def generate_qr_codes(df: pd.DataFrame, url_column: str,
             continue
             
         # Generate QR code
-        img = create_qr_code(url)
+        img = create_qr_code(url, size=qr_size, border=qr_border, output_size=output_size)
         
         # Convert to bytes
         img_byte_arr = io.BytesIO()

@@ -75,6 +75,12 @@ if 'qr_codes' not in st.session_state:
     st.session_state.qr_codes = []
 if 'progress' not in st.session_state:
     st.session_state.progress = 0
+if 'qr_size' not in st.session_state:
+    st.session_state.qr_size = 10
+if 'qr_border' not in st.session_state:
+    st.session_state.qr_border = 4
+if 'output_resolution' not in st.session_state:
+    st.session_state.output_resolution = ""
 
 # Title and introduction
 st.title("QR Code Generator for Spreadsheet Data")
@@ -131,13 +137,21 @@ with st.sidebar:
         st.write("---")
         st.header("QR Code Options")
         
-        qr_size = st.slider("QR Code Size", 
-                           min_value=1, max_value=20, value=10, 
+        # Update session state with the slider values
+        st.session_state.qr_size = st.slider("QR Code Size", 
+                           min_value=1, max_value=20, value=st.session_state.qr_size, 
                            help="Size of the QR code in pixels per module")
         
-        qr_border = st.slider("Border Width", 
-                             min_value=0, max_value=10, value=4,
+        st.session_state.qr_border = st.slider("Border Width", 
+                             min_value=0, max_value=10, value=st.session_state.qr_border,
                              help="Width of the QR code border in modules")
+        
+        st.session_state.output_resolution = st.text_input(
+            "Output Resolution (pixels)", 
+            value=st.session_state.output_resolution, 
+            placeholder="e.g., 900 for 900x900 pixels",
+            help="Final image resolution in pixels (square). Leave empty to use default size."
+        )
 
 # Main area - Show data and generate QR codes
 if st.session_state.current_df is not None:
@@ -229,8 +243,22 @@ if st.session_state.current_df is not None:
                     # Calculate batch size for progress updates
                     total_rows = len(processed_df)
                     
+                    # Parse output resolution
+                    output_size = None
+                    if st.session_state.output_resolution and st.session_state.output_resolution.strip():
+                        try:
+                            output_size = int(st.session_state.output_resolution.strip())
+                        except ValueError:
+                            st.warning(f"Invalid output resolution '{st.session_state.output_resolution}'. Using default size.")
+                    
                     # Generate QR codes
-                    qr_codes = generate_qr_codes(processed_df, url_column)
+                    qr_codes = generate_qr_codes(
+                        processed_df, 
+                        url_column, 
+                        qr_size=st.session_state.qr_size, 
+                        qr_border=st.session_state.qr_border,
+                        output_size=output_size
+                    )
                     st.session_state.qr_codes = qr_codes
                     progress_bar.progress(100)
                     
