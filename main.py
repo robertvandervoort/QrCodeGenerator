@@ -21,13 +21,54 @@ from utils.qr_generator import (
 )
 from utils.logging_utils import logger, log_dataframe_info, log_qr_generation_summary, set_debug_mode
 
+# Initialize session state variables if they don't exist
+if 'debug_mode' not in st.session_state:
+    st.session_state.debug_mode = False
+
 # Page configuration
 st.set_page_config(
     page_title="QR Code Generator for Spreadsheets",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://docs.streamlit.io',
+        'Report a bug': "https://github.com/streamlit/streamlit/issues",
+        'About': "# QR Code Generator for Spreadsheet Data\n"
+                "A tool to generate QR codes from URLs in Excel or CSV files.\n\n"
+                "Version: 1.0.0"
+    }
 )
+
+# Initialize the debug mode from URL parameters if available
+try:
+    query_params = st.query_params
+    if "debug" in query_params:
+        debug_value = query_params["debug"] == "true"
+        st.session_state.debug_mode = debug_value
+        set_debug_mode(debug_value)
+except:
+    # Fallback for older Streamlit versions
+    pass
+
+# Create a debug mode checkbox in the sidebar
+debug_checkbox = st.sidebar.checkbox("Enable Debug Mode", value=st.session_state.debug_mode, 
+                     help="Show detailed logs in the console for troubleshooting")
+
+if debug_checkbox != st.session_state.debug_mode:
+    st.session_state.debug_mode = debug_checkbox
+    set_debug_mode(debug_checkbox)
+    
+    # Show a notification if the debug mode changed
+    if debug_checkbox:
+        st.sidebar.success("Debug mode enabled")
+    
+    # Update URL parameter
+    try:
+        st.query_params.debug = "true" if debug_checkbox else "false"
+    except:
+        # Fallback for older Streamlit versions
+        pass
 
 # Custom CSS
 st.markdown("""
@@ -83,8 +124,6 @@ if 'qr_border' not in st.session_state:
     st.session_state.qr_border = 4
 if 'output_resolution' not in st.session_state:
     st.session_state.output_resolution = ""
-if 'debug_mode' not in st.session_state:
-    st.session_state.debug_mode = False
 
 # Title and introduction
 st.title("QR Code Generator for Spreadsheet Data")
@@ -360,26 +399,8 @@ else:
     """
     )
 
-# Footer with Settings
+# Footer
 st.write("---")
-
-# Add a settings expander in the footer area
-with st.expander("⚙️ Settings"):
-    # Add debug mode toggle
-    debug_mode = st.toggle(
-        "Debug Mode", 
-        value=st.session_state.debug_mode,
-        help="Enable detailed logging for troubleshooting. This shows additional diagnostic information in the console."
-    )
-    
-    # Update session state and logger if debug mode changed
-    if debug_mode != st.session_state.debug_mode:
-        st.session_state.debug_mode = debug_mode
-        set_debug_mode(debug_mode)
-        if debug_mode:
-            st.info("Debug mode enabled. Detailed logs will be shown in the console.")
-        else:
-            st.info("Debug mode disabled. Only warnings and errors will be shown.")
 
 # Copyright footer
 st.markdown("""
