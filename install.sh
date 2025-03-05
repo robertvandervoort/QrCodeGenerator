@@ -8,7 +8,7 @@ echo ""
 if [ -n "$REPL_ID" ]; then
     echo "Detected Replit environment. Skipping virtual environment setup."
     echo "Installing dependencies..."
-    pip install -r app_requirements.txt
+    pip install -r requirements.txt
     # Jump to launch section
     launch_app=true
 else
@@ -39,7 +39,7 @@ else
     fi
 
     echo "Installing dependencies..."
-    pip install -r app_requirements.txt
+    pip install -r requirements.txt
     if [ $? -ne 0 ]; then
         echo "Failed to install dependencies."
         exit 1
