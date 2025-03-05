@@ -125,12 +125,12 @@ with st.container(border=True):
         qr_size_quick = st.number_input("Size (pixels)", min_value=5, max_value=20, value=10, help="QR code module size in pixels")
     
     # Advanced options expander
-    with st.expander("Advanced Options", expanded=False):
+    with st.expander("Advanced Options", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
             qr_border_quick = st.slider("Border Width", min_value=0, max_value=8, value=4, help="Width of white border around QR code")
         with col2:
-            output_res_quick = st.number_input("Output Resolution", min_value=0, value=0, step=100, help="Final image resolution in pixels (0 = default)")
+            output_res_quick = st.number_input("Output Resolution", min_value=0, value=250, step=10, help="Final image resolution in pixels (square)")
     
     if quick_url:
         if not quick_url.lower().startswith(('http://', 'https://')):
