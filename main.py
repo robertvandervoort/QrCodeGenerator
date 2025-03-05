@@ -5,6 +5,7 @@ import base64
 import zipfile
 from typing import List, Dict, Tuple, Optional
 import os
+from PIL import Image
 
 # Import utility modules
 from utils.file_handler import (
@@ -107,7 +108,56 @@ if 'output_resolution' not in st.session_state:
     st.session_state.output_resolution = ""
 
 # Title and introduction
-st.title("QR Code Generator for Spreadsheet Data")
+st.title("QR Code Generator")
+st.write("""
+Generate QR codes from URLs in spreadsheet data or quickly create a single QR code.
+""")
+
+# Quick Single URL QR Code Generator
+st.subheader("✨ Quick Single URL Generator")
+with st.container(border=True):
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        quick_url = st.text_input("Enter URL", placeholder="https://example.com", help="Enter any URL to create a QR code instantly")
+    
+    with col2:
+        qr_size_quick = st.selectbox("Size", [("Small", 5), ("Medium", 10), ("Large", 15)], format_func=lambda x: x[0], index=1, help="Select QR code size")
+    
+    if quick_url:
+        if not quick_url.lower().startswith(('http://', 'https://')):
+            quick_url = "https://" + quick_url
+        
+        # Generate QR code
+        qr_img = create_qr_code(quick_url, size=qr_size_quick[1], border=4)
+        qr_img_bytes = io.BytesIO()
+        qr_img.save(qr_img_bytes, format='PNG')
+        qr_img_bytes = qr_img_bytes.getvalue()
+        
+        # Display QR code
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.image(qr_img_bytes, width=250)
+        with col2:
+            st.markdown("#### Download Options")
+            # Create filename from URL
+            domain = quick_url.replace('https://', '').replace('http://', '').split('/')[0]
+            filename = f"qr_{domain}.png"
+            
+            # Download button
+            st.download_button(
+                label="Download QR Code",
+                data=qr_img_bytes,
+                file_name=filename,
+                mime="image/png",
+            )
+            # HTML link (for more compatibility)
+            st.markdown(get_image_download_link(qr_img_bytes, filename), unsafe_allow_html=True)
+
+st.divider()  # Divider between quick generator and batch processing
+
+# Batch processing introduction
+st.subheader("📊 Spreadsheet Batch Processing")
 st.write("""
 Upload an Excel spreadsheet or CSV file to generate QR codes from URLs in the data.
 The application will automatically detect columns containing URLs and allow you
@@ -395,9 +445,9 @@ if st.session_state.current_df is not None:
             st.info(f"Showing 9 of {len(st.session_state.qr_codes)} QR codes. Download the ZIP file to get all codes.")
 
 else:
-    # Show instructions when no file is loaded
+    # Show instructions for batch processing
     st.info("""
-    ### How to use this app:
+    ### How to use Spreadsheet Batch Processing:
     
     1. Upload an Excel (.xlsx, .xls) or CSV file using the sidebar
     2. Select a sheet (for Excel files with multiple sheets)
@@ -417,6 +467,6 @@ st.write("---")
 # Copyright footer
 st.markdown("""
 <div style="text-align: center; color: #888;">
-    Built with Streamlit • QR Code Generator for Spreadsheet Data
+    Built with Streamlit • QR Code Generator for URLs and Spreadsheet Data
 </div>
 """, unsafe_allow_html=True)
