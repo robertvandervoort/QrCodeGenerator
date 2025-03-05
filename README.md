@@ -79,7 +79,7 @@ If you prefer to install manually:
 
 ### Quick URL Generation
 1. Enter the URL in the "Quick Single URL Generator" section
-2. Select a size (Small, Medium, or Large)
+2. Set the size in pixels (5-20 pixels per module)
 3. Expand "Advanced Options" to customize border width and resolution (optional)
 4. The QR code will be generated automatically
 5. Use the download options to save your QR code

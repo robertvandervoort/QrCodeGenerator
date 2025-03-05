@@ -122,7 +122,7 @@ with st.container(border=True):
         quick_url = st.text_input("Enter URL", placeholder="https://example.com", help="Enter any URL to create a QR code instantly")
     
     with col2:
-        qr_size_quick = st.selectbox("Size", [("Small", 5), ("Medium", 10), ("Large", 15)], format_func=lambda x: x[0], index=1, help="Select QR code size")
+        qr_size_quick = st.number_input("Size (pixels)", min_value=5, max_value=20, value=10, help="QR code module size in pixels")
     
     # Advanced options expander
     with st.expander("Advanced Options", expanded=False):
@@ -142,7 +142,7 @@ with st.container(border=True):
             output_size_quick = output_res_quick
         
         # Generate QR code
-        qr_img = create_qr_code(quick_url, size=qr_size_quick[1], border=qr_border_quick, output_size=output_size_quick)
+        qr_img = create_qr_code(quick_url, size=qr_size_quick, border=qr_border_quick, output_size=output_size_quick)
         qr_img_bytes = io.BytesIO()
         qr_img.save(qr_img_bytes, format='PNG')
         qr_img_bytes = qr_img_bytes.getvalue()
