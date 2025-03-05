@@ -21,6 +21,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Starting QR Code Generator app..."
+echo "Generate QR codes from URLs or process spreadsheet data"
 echo "(Press Ctrl+C to exit the application)"
 echo ""
 
