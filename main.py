@@ -122,7 +122,7 @@ with st.container(border=True):
         quick_url = st.text_input("Enter URL", placeholder="https://example.com", help="Enter any URL to create a QR code instantly")
     
     with col2:
-        qr_size_quick = st.number_input("Size (pixels)", min_value=5, max_value=20, value=10, help="QR code module size in pixels")
+        qr_size_quick = st.number_input("Module Size", min_value=5, max_value=20, value=10, help="Size of each individual QR code module/square in pixels")
     
     # Advanced options expander
     with st.expander("Advanced Options", expanded=True):
@@ -130,7 +130,7 @@ with st.container(border=True):
         with col1:
             qr_border_quick = st.slider("Border Width", min_value=0, max_value=8, value=4, help="Width of white border around QR code")
         with col2:
-            output_res_quick = st.number_input("Output Resolution", min_value=0, value=250, step=10, help="Final image resolution in pixels (square)")
+            output_res_quick = st.number_input("Output Resolution", min_value=0, value=250, step=10, help="Final output image size in pixels (width & height). Controls the overall size of the QR code image regardless of module size.")
     
     if quick_url:
         if not quick_url.lower().startswith(('http://', 'https://')):
@@ -225,9 +225,9 @@ with st.sidebar:
         st.header("QR Code Options")
         
         # Update session state with the slider values
-        st.session_state.qr_size = st.slider("QR Code Size", 
+        st.session_state.qr_size = st.slider("Module Size", 
                            min_value=1, max_value=20, value=st.session_state.qr_size, 
-                           help="Size of the QR code in pixels per module")
+                           help="Size of each individual QR code module/square in pixels")
         
         st.session_state.qr_border = st.slider("Border Width", 
                              min_value=0, max_value=10, value=st.session_state.qr_border,
@@ -236,8 +236,8 @@ with st.sidebar:
         st.session_state.output_resolution = st.text_input(
             "Output Resolution (pixels)", 
             value=st.session_state.output_resolution, 
-            placeholder="e.g., 900 for 900x900 pixels",
-            help="Final image resolution in pixels (square). Leave empty to use default size."
+            placeholder="e.g., 250 for 250x250 pixels",
+            help="Final output image size in pixels (width & height). Controls the overall size of the QR code image regardless of module size."
         )
     
     # Add debug mode section at the bottom of the sidebar
