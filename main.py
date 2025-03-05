@@ -51,37 +51,6 @@ except:
     # Fallback for older Streamlit versions
     pass
 
-# Add debug mode section to the sidebar
-st.sidebar.write("---")
-st.sidebar.header("Debug Options")
-
-# Add explanatory text
-st.sidebar.info("""
-Debug mode increases logging verbosity to help troubleshoot issues with file processing and QR code generation.
-When enabled, detailed logs will be written to the console with information about data processing, URL validation, and QR code creation.
-""")
-
-# Create a debug mode checkbox in the sidebar
-debug_checkbox = st.sidebar.checkbox("Enable Debug Mode", value=st.session_state.debug_mode, 
-                     help="Show detailed logs in the console for troubleshooting")
-
-if debug_checkbox != st.session_state.debug_mode:
-    st.session_state.debug_mode = debug_checkbox
-    set_debug_mode(debug_checkbox)
-    
-    # Show a notification if the debug mode changed
-    if debug_checkbox:
-        st.sidebar.success("Debug mode enabled")
-    else:
-        st.sidebar.success("Debug mode disabled")
-    
-    # Update URL parameter
-    try:
-        st.query_params.debug = "true" if debug_checkbox else "false"
-    except:
-        # Fallback for older Streamlit versions
-        pass
-
 # Custom CSS
 st.markdown("""
 <style>
@@ -207,6 +176,37 @@ with st.sidebar:
             placeholder="e.g., 900 for 900x900 pixels",
             help="Final image resolution in pixels (square). Leave empty to use default size."
         )
+    
+    # Add debug mode section at the bottom of the sidebar
+    st.write("---")
+    st.header("Debug Options")
+    
+    # Add explanatory text
+    st.info("""
+    Debug mode increases logging verbosity to help troubleshoot issues with file processing and QR code generation.
+    When enabled, detailed logs will be written to the console with information about data processing, URL validation, and QR code creation.
+    """)
+    
+    # Create a debug mode checkbox in the sidebar
+    debug_checkbox = st.checkbox("Enable Debug Mode", value=st.session_state.debug_mode, 
+                     help="Show detailed logs in the console for troubleshooting")
+    
+    if debug_checkbox != st.session_state.debug_mode:
+        st.session_state.debug_mode = debug_checkbox
+        set_debug_mode(debug_checkbox)
+        
+        # Show a notification if the debug mode changed
+        if debug_checkbox:
+            st.success("Debug mode enabled")
+        else:
+            st.success("Debug mode disabled")
+        
+        # Update URL parameter
+        try:
+            st.query_params.debug = "true" if debug_checkbox else "false"
+        except:
+            # Fallback for older Streamlit versions
+            pass
 
 # Main area - Show data and generate QR codes
 if st.session_state.current_df is not None:
