@@ -24,6 +24,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Starting QR Code Generator app...
+echo Generate QR codes from URLs or process spreadsheet data
 echo (Close the terminal window to exit the application)
 echo.
 

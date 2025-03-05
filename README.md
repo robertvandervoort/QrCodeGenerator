@@ -1,9 +1,18 @@
-# QR Code Generator for Spreadsheet Data
+# QR Code Generator
 
-A web-based application that processes Excel/CSV files to generate QR codes from URL data, with customizable file naming based on column data.
+A web-based application that generates QR codes in two ways:
+1. Quick single URL generation for instant QR codes
+2. Batch processing Excel/CSV files to generate multiple QR codes from URL data
 
 ## Features
 
+### Quick URL Generation
+- Instantly create QR codes from any URL
+- Customize QR code size, border width, and resolution
+- Download generated QR codes directly
+- Auto-prefixes "https://" if missing from URL
+
+### Spreadsheet Batch Processing
 - Upload Excel (.xlsx, .xls) or CSV files
 - Automatic detection of URL columns in spreadsheets
 - Custom QR code size, border width, and resolution
@@ -68,6 +77,14 @@ If you prefer to install manually:
 
 ## Usage
 
+### Quick URL Generation
+1. Enter the URL in the "Quick Single URL Generator" section
+2. Select a size (Small, Medium, or Large)
+3. Expand "Advanced Options" to customize border width and resolution (optional)
+4. The QR code will be generated automatically
+5. Use the download options to save your QR code
+
+### Spreadsheet Batch Processing
 1. Upload an Excel (.xlsx, .xls) or CSV file using the sidebar
 2. Select a sheet (for Excel files with multiple sheets)
 3. Choose the column containing URLs for QR code generation

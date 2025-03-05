@@ -28,16 +28,16 @@ if 'debug_mode' not in st.session_state:
 
 # Page configuration
 st.set_page_config(
-    page_title="QR Code Generator for Spreadsheets",
-    page_icon="📊",
+    page_title="QR Code Generator",
+    page_icon="📱",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
         'Get help': 'https://github.com/robertvandervoort/QrCodeGenerator/readme.md',
         'Report a bug': "https://github.com/robertvandervoort/QrCodeGenerator/issues/new",
-        'About': "# QR Code Generator for Spreadsheet Data\n"
-                "A tool to generate QR codes from URLs in Excel or CSV files.\n\n"
-                "Version: 1.0.0"
+        'About': "# QR Code Generator\n"
+                "A tool to generate QR codes from individual URLs or from spreadsheet data.\n\n"
+                "Version: 1.1.0"
     }
 )
 
@@ -124,12 +124,25 @@ with st.container(border=True):
     with col2:
         qr_size_quick = st.selectbox("Size", [("Small", 5), ("Medium", 10), ("Large", 15)], format_func=lambda x: x[0], index=1, help="Select QR code size")
     
+    # Advanced options expander
+    with st.expander("Advanced Options", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            qr_border_quick = st.slider("Border Width", min_value=0, max_value=8, value=4, help="Width of white border around QR code")
+        with col2:
+            output_res_quick = st.number_input("Output Resolution", min_value=0, value=0, step=100, help="Final image resolution in pixels (0 = default)")
+    
     if quick_url:
         if not quick_url.lower().startswith(('http://', 'https://')):
             quick_url = "https://" + quick_url
         
+        # Parse output resolution
+        output_size_quick = None
+        if output_res_quick > 0:
+            output_size_quick = output_res_quick
+        
         # Generate QR code
-        qr_img = create_qr_code(quick_url, size=qr_size_quick[1], border=4)
+        qr_img = create_qr_code(quick_url, size=qr_size_quick[1], border=qr_border_quick, output_size=output_size_quick)
         qr_img_bytes = io.BytesIO()
         qr_img.save(qr_img_bytes, format='PNG')
         qr_img_bytes = qr_img_bytes.getvalue()
