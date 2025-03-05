@@ -32,14 +32,11 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get help': 'https://docs.streamlit.io',
-        'Report a bug': "https://github.com/streamlit/streamlit/issues",
+        'Get help': 'https://github.com/robertvandervoort/QrCodeGenerator/readme.md',
+        'Report a bug': "https://github.com/robertvandervoort/QrCodeGenerator/issues/new",
         'About': "# QR Code Generator for Spreadsheet Data\n"
                 "A tool to generate QR codes from URLs in Excel or CSV files.\n\n"
-                "Version: 1.0.0\n\n"
-                "### Debug Mode\n"
-                "You can enable Debug Mode using the checkbox in the sidebar. "
-                "This increases the verbosity of logs for troubleshooting purposes."
+                "Version: 1.0.0"
     }
 )
 
